@@ -1,10 +1,14 @@
 import 'dotenv/config';
-import { createAuth } from '@keystone-next/auth'
+import { createAuth } from '@keystone-next/auth';
 import { config, createSchema } from '@keystone-next/keystone/schema';
+import {
+  withItemData,
+  statelessSessions,
+} from '@keystone-next/keystone/session';
 import { User } from './schemas/User';
-import { withItemData, statelessSessions } from '@keystone-next/keystone/session'
 import { Product } from './schemas/Products';
 import { ProductImage } from './schemas/ProductImage';
+import { insertSeedData } from './seed-data';
 
 const databaseURL =
   process.env.DATABASE_URL || 'mongodb://localhost/keystone-sick-fits-tutorial';
@@ -20,34 +24,39 @@ const { withAuth } = createAuth({
   secretField: 'password',
   initFirstItem: {
     fields: ['name', 'email', 'password'],
-    //TODO add initial roles here
-  }
-})
+    // TODO add initial roles here
+  },
+});
 
-export default withAuth(config({
-  server: {
-    cors: {
-      origin: [process.env.FRONTEND_URL],
-      credentials: true,
+export default withAuth(
+  config({
+    server: {
+      cors: {
+        origin: [process.env.FRONTEND_URL],
+        credentials: true,
+      },
     },
-  },
-  db: {
-    adapter: 'mongoose',
-    url: databaseURL,
-    // TODO add data seeding here
-  },
-  lists: createSchema({
-    User,
-    Product,
-    ProductImage
-  }),
-  ui: {
-    //show the ui for ppl who pass this test
-    isAccessAllowed: ({session}) => {
-      return !!session?.data;
+    db: {
+      adapter: 'mongoose',
+      url: databaseURL,
+      async onConnect(keystone) {
+        console.log('conencted to the database');
+        if (process.argv.includes('--seed-data')) {
+          await insertSeedData(keystone);
+        }
+      },
     },
-  },
-  session: withItemData(statelessSessions(sessionConfig), {
-    User: `id`
+    lists: createSchema({
+      User,
+      Product,
+      ProductImage,
+    }),
+    ui: {
+      // show the ui for ppl who pass this test
+      isAccessAllowed: ({ session }) => !!session?.data,
+    },
+    session: withItemData(statelessSessions(sessionConfig), {
+      User: 'id',
+    }),
   })
-}));
+);
