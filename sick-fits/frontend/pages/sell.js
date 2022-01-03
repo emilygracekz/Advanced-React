@@ -1,3 +1,13 @@
+import { useState } from 'react';
+
+import CreateProduct from '../components/CreateProduct';
+
 export default function SellPage() {
-  return <p>hello i am the sell apge</p>;
+  const [name, setName] = useState('Wes');
+
+  return (
+    <div>
+      <CreateProduct />
+    </div>
+  );
 }
